@@ -16,7 +16,7 @@ sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again p
 echo -e "[client]\nuser=root\npassword=$ROOT_SQL_PASS" | sudo tee /root/.my.cnf
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y install git python-virtualenv python3-virtualenv curl ntp build-essential screen cmake pkg-config libboost-all-dev libevent-dev libunbound-dev libminiupnpc-dev libunwind8-dev liblzma-dev libldns-dev libexpat1-dev libgtest-dev mysql-server lmdb-utils libzmq3-dev doxygen graphviz
 cd ~
-git clone https://github.com/ArqTras/nodejs-pool.git  # Change this depending on how the deployment goes.
+git clone https://github.com/Infinity-Pools/nodejs.git nodejs-pool # Change this depending on how the deployment goes.
 cd /usr/src/gtest
 sudo cmake .
 sudo make
@@ -24,31 +24,29 @@ sudo mv libg* /usr/lib/
 cd ~
 sudo systemctl enable ntp
 cd /usr/local/src
-sudo git clone https://github.com/sumoprojects/sumokoin.git sumokoin
-cd sumokoin
-#sudo git checkout v0.11.1.0
-#curl https://raw.githubusercontent.com/vtnplus/nodejs-pool/master/deployment/monero_daemon.patch | sudo git apply -v
+sudo git clone https://github.com/schmeckles22/SolaceCoin.git solace
+cd solace
 sudo make -j$(nproc)
-sudo cp ~/nodejs-pool/deployment/sumo.service /lib/systemd/system/
-sudo useradd -m pooldaemon -d /home/pooldaemon
-BLOCKCHAIN_DOWNLOAD_DIR=$(sudo -u pooldaemon mktemp -d)
-#sudo -u pooldaemon wget --limit-rate=50m -O $BLOCKCHAIN_DOWNLOAD_DIR/blockchain.raw https://downloads.getmonero.org/blockchain.raw
-#sudo -u pooldaemon /usr/local/src/monero/build/release/bin/monero-blockchain-import --input-file $BLOCKCHAIN_DOWNLOAD_DIR/blockchain.raw --batch-size 20000 --database lmdb#fastest --verify off --data-dir /home/pooldaemon/.bitmonero
-#sudo -u pooldaemon rm -rf $BLOCKCHAIN_DOWNLOAD_DIR
+sudo cp ~/nodejs-pool/deployment/services/solace.service /lib/systemd/system/
+sudo useradd -m solacedaemon -d /home/solacedaemon
+BLOCKCHAIN_DOWNLOAD_DIR=$(sudo -u solacedaemon mktemp -d)
+sudo -u solacedaemon wget --limit-rate=50m -O $BLOCKCHAIN_DOWNLOAD_DIR/blockchain.raw https://infinity-pools.cc/solace/blockchain.raw
+sudo -u solacedaemon /usr/local/src/solace/build/release/bin/solace-blockchain-import --input-file $BLOCKCHAIN_DOWNLOAD_DIR/blockchain.raw --batch-size 20000 --database lmdb#fastest --verify 0 --data-dir /home/pooldaemon/.solace
+sudo -u solacedaemon rm -rf $BLOCKCHAIN_DOWNLOAD_DIR
 sudo systemctl daemon-reload
-sudo systemctl enable sumo.service
-sudo systemctl start sumo.service
+sudo systemctl enable solace
+sudo systemctl start solace
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.0/install.sh | bash
 source ~/.nvm/nvm.sh
 nvm install v8.9.3
 cd ~/nodejs-pool
 npm install
 npm install -g pm2
-openssl req -subj "/C=IT/ST=Pool/L=Daemon/O=Mining Pool/CN=mining.pool" -newkey rsa:2048 -nodes -keyout cert.key -x509 -out cert.pem -days 36500
+openssl req -subj "/C=RO/ST=Sibiu/L=Daemon/O=Infinity Pools/CN=infinity-pools.cc" -newkey rsa:2048 -nodes -keyout cert.key -x509 -out cert.pem -days 36500
 mkdir ~/pool_db/
 sed -r "s/(\"db_storage_path\": ).*/\1\"\/home\/$CURUSER\/pool_db\/\",/" config_example.json > config.json
 cd ~
-git clone https://github.com/miziel/poolui.git
+git clone https://github.com/Infinity-Pools/poolui.git
 cd poolui
 npm install
 ./node_modules/bower/bin/bower update
@@ -84,8 +82,8 @@ sudo env PATH=$PATH:`pwd`/.nvm/versions/node/v8.9.3/bin `pwd`/.nvm/versions/node
 cd ~/nodejs-pool
 sudo chown -R $CURUSER. ~/.pm2
 echo "Installing pm2-logrotate in the background!"
-pm2 install pm2-logrotate &
-mysql -u root --password=$ROOT_SQL_PASS < deployment/basesumo.sql
+pm2 install pm2-logrotate
+mysql -u root --password=$ROOT_SQL_PASS < deployment/db/basesolace.sql
 mysql -u root --password=$ROOT_SQL_PASS pool -e "INSERT INTO pool.config (module, item, item_value, item_type, Item_desc) VALUES ('api', 'authKey', '`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1`', 'string', 'Auth key sent with all Websocket frames for validation.')"
 mysql -u root --password=$ROOT_SQL_PASS pool -e "INSERT INTO pool.config (module, item, item_value, item_type, Item_desc) VALUES ('api', 'secKey', '`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1`', 'string', 'HMAC key for Passwords.  JWT Secret Key.  Changing this will invalidate all current logins.')"
 pm2 start init.js --name=api --log-date-format="YYYY-MM-DD HH:mm Z" -- --module=api

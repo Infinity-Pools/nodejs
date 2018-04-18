@@ -1,0 +1,12 @@
+[Unit]
+Description=Solace Daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/local/src/solace/build/src/solaced --rpc-bind-ip 127.0.0.1 --log-file /home/solacedaemon/solaced.log
+WorkingDirectory=/home/solacedaemon/
+User=solacedaemon
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
