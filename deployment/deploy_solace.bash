@@ -31,7 +31,7 @@ sudo cp ~/nodejs-pool/deployment/services/solace.service /lib/systemd/system/
 sudo useradd -m solacedaemon -d /home/solacedaemon
 BLOCKCHAIN_DOWNLOAD_DIR=$(sudo -u solacedaemon mktemp -d)
 sudo -u solacedaemon wget --limit-rate=50m -O $BLOCKCHAIN_DOWNLOAD_DIR/blockchain.raw https://infinity-pools.cc/solace/blockchain.raw
-sudo -u solacedaemon /usr/local/src/solace/build/release/bin/solace-blockchain-import --input-file $BLOCKCHAIN_DOWNLOAD_DIR/blockchain.raw --batch-size 20000 --database lmdb#fastest --verify 0 --data-dir /home/pooldaemon/.solace
+sudo -u solacedaemon /usr/local/src/solace/build/release/bin/solace-blockchain-import --input-file $BLOCKCHAIN_DOWNLOAD_DIR/blockchain.raw --verify 0 --data-dir /home/solacedaemon/.solace
 sudo -u solacedaemon rm -rf $BLOCKCHAIN_DOWNLOAD_DIR
 sudo systemctl daemon-reload
 sudo systemctl enable solace
